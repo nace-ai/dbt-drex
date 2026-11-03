@@ -1,0 +1,44 @@
+# The test environment. The package itself is the dbt project at the root (dbt_project.yml, macros/); nothing here
+# is installed into a dbt user's environment.
+[project]
+name = "dbt-drex-tests"
+version = "0.1.0"
+requires-python = ">=3.11"
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    # Every adapter the package dispatches to, for the compile tests, and plain dbt-spark for its refusal
+    "dbt-core>=1.8,<2",
+    "dbt-bigquery>=1.8",
+    "dbt-clickhouse>=1.8",
+    "dbt-databricks>=1.8",
+    "dbt-duckdb>=1.9",
+    "dbt-postgres>=1.8",
+    "dbt-snowflake>=1.8",
+    "dbt-spark[PyHive]>=1.8",
+    # drex-duckdb is built for DuckDB 2.0 only
+    "duckdb>=2.0,<2.1",
+    "jsonschema>=4.23",
+    "pytest>=8.3",
+    "ruff>=0.8",
+    # An adapter built on dbt-postgres, which the package refuses
+    "dbt-materialize>=1.9.12",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+addopts = "--ignore=test/live"
+# dbt installs this package into test/compile_project/dbt_packages as a link back to the repository
+norecursedirs = [".*", "dbt_packages", "target", "logs", "compile_project", "expected"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+# drex-duckdb's mock, copied unchanged
+extend-exclude = ["test/mock", ".drex-*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

@@ -1,0 +1,29 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+# dbt's output and the local package install
+target/
+dbt_packages/
+logs/
+package-lock.yml
+.user.yml
+*.duckdb
+*.duckdb.wal
+# The warehouse integrations' checkouts and the generated configs the tests build warehouses from
+.drex-*/
+test/.generated/
+
+# Maintainers' local files, never published: the live gate against production, internal notes and verification
+# records, kept in local checkouts for the people and coding agents who work on this repository
+/test/live/
+/.github/workflows/LiveTests.yml
+/docs/verification-report.md
+/internal/
+/AGENTS.md
+/CLAUDE.md
+/CLAUDE.local.md
+.env
+.env.*
+*.pem
+*.p8

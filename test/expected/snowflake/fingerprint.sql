@@ -1,0 +1,1 @@
+select md5(cast('{"model": null, "question": {"instructions": "Which team?", "labels": ["billing", "technical"]}}' || coalesce('v' || TO_JSON(TO_VARIANT(body)), 'n') as TEXT)) as fingerprint from tickets

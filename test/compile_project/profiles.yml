@@ -1,0 +1,13 @@
+# Placeholder credentials: the compile tests never connect
+drex_compile_tests:
+  target: duckdb
+  outputs:
+    duckdb: {type: duckdb, path: ":memory:"}
+    postgres: {type: postgres, host: 127.0.0.1, port: 1, user: u, password: p, dbname: d, schema: s, threads: 1}
+    snowflake: {type: snowflake, account: compile-only, user: u, password: p, database: d, schema: s, warehouse: w, threads: 1}
+    bigquery: {type: bigquery, method: oauth-secrets, token: x, project: compile-only, dataset: s, threads: 1}
+    databricks: {type: databricks, host: compile-only.cloud.databricks.com, http_path: /sql/1.0/warehouses/x, token: x, catalog: c, schema: s, threads: 1}
+    clickhouse: {type: clickhouse, host: 127.0.0.1, port: 1, user: u, password: p, schema: s, threads: 1}
+    # An adapter built on dbt-postgres, whose dispatch reaches the postgres__ macros
+    materialize: {type: materialize, host: 127.0.0.1, port: 1, user: u, password: p, dbname: d, schema: s, threads: 1}
+    spark: {type: spark, method: http, host: compile-only, token: x, cluster: x, schema: s, threads: 1}

@@ -1,0 +1,1 @@
+select drex.public.drex_choice(body, 'Which team should handle this ticket?', PARSE_JSON('[{"label": "billing", "description": "Payments, invoices, refunds and charges"}, {"label": "technical", "description": null}, {"label": "sales", "description": null}]'), 'drex-max') as answer from tickets

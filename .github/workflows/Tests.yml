@@ -1,0 +1,145 @@
+#
+# The package without credentials: the SQL every macro compiles to on each adapter and what it refuses, then the
+# integration project end to end against the mock Drex API (test/mock/drex_mock.py) on DuckDB 2.0 with drex-duckdb
+# from community extensions, on drex-postgres's pgsql-http variant, and on drex-clickhouse, each at its release.
+#
+name: Tests
+on:
+  # A pull request runs on its pull_request event alone, not again for the push
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The warehouse integrations' releases the macros compile to, which docs/API.md names
+  DREX_POSTGRES_REF: v0.3.0
+  DREX_CLICKHOUSE_REF: v0.1.2
+
+jobs:
+  compile-and-duckdb:
+    name: Compile on every adapter; DuckDB end to end
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check . && uv run ruff format --check .
+
+      - name: Check the mock
+        # jsonschema validates every response against Drex's schemas in test/mock/openapi.json
+        run: uv run python -m unittest discover -s test/mock
+
+      - name: Compile tests, DuckDB, and the docs' SQL examples on DuckDB
+        # The Drex docs page's examples need DREX_DOCS_DBT_MDX, a checkout of nace-ai/drex, so only README.md's and
+        # docs/API.md's run here
+        run: uv run pytest -v -rs test/test_compile.py test/test_duckdb.py test/test_doc_snippets.py
+
+  minimum-versions:
+    name: dbt-core 1.8 and dbt-duckdb 1.9.0, the oldest the package supports
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install
+        run: |
+          uv venv --python 3.12
+          uv pip install 'dbt-core~=1.8.0' 'dbt-duckdb==1.9.0' 'duckdb==2.0.0' pytest
+
+      - name: Compile tests and DuckDB
+        run: >-
+          .venv/bin/python -m pytest -v -rs test/test_duckdb.py test/test_doc_snippets.py
+          'test/test_compile.py::test_compiles_to_each_warehouse_call[duckdb]'
+          'test/test_compile.py::test_location_and_model_vars[duckdb]'
+          test/test_compile.py::test_refused_at_compile_time
+          test/test_compile.py::test_errors_name_the_model_file
+          test/test_compile.py::test_warns_in_a_model_every_read_runs_again
+
+  postgres:
+    name: Postgres end to end
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: nace-ai/drex-postgres
+          ref: ${{ env.DREX_POSTGRES_REF }}
+          path: .drex-postgres
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: uv sync --locked
+
+      - name: Start drex-postgres's test image, with the pgsql-http variant pointed at its mock
+        # The image runs the mock beside Postgres, at http://127.0.0.1:8787 inside the container
+        run: |
+          docker build -f .drex-postgres/docker/Dockerfile -t drex-postgres-test .drex-postgres
+          docker run -d --name drex-pg -p 55432:5432 -p 58787:8787 drex-postgres-test
+          for _ in $(seq 60); do docker exec drex-pg pg_isready -q -h 127.0.0.1 -U postgres && break; sleep 1; done
+          docker exec -i drex-pg psql -q -U postgres -v ON_ERROR_STOP=1 \
+            -c 'CREATE EXTENSION IF NOT EXISTS http' -c 'SET search_path = public' -f - < .drex-postgres/sql/drex_http.sql
+          docker exec drex-pg psql -q -U postgres -v ON_ERROR_STOP=1 -c "INSERT INTO drex_settings (api_key, base_url)
+            VALUES ('nace_sk_mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm', 'http://127.0.0.1:8787/ns/postgres/ok')"
+
+      - name: Run the tests
+        env:
+          DREX_TEST_POSTGRES_PORT: '55432'
+          DREX_TEST_POSTGRES_MOCK: http://127.0.0.1:58787
+        run: uv run pytest -v -rs test/test_postgres.py test/test_doc_snippets.py -k postgres
+
+      - name: Postgres log
+        if: failure()
+        run: docker logs drex-pg
+
+  clickhouse:
+    name: ClickHouse end to end
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: nace-ai/drex-clickhouse
+          ref: ${{ env.DREX_CLICKHOUSE_REF }}
+          path: .drex-clickhouse
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: uv sync --locked
+
+      - name: Start drex-clickhouse with its functions pointed at the mock
+        run: |
+          python3 test/clickhouse/functions.py .drex-clickhouse/config/drex_function.xml \
+            http://127.0.0.1:8787/ns/clickhouse/ok test/.generated/drex_function.xml
+          printf 'nace_sk_mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm' > test/.generated/nace_api_key
+          DREX_CLICKHOUSE_SOURCE="$PWD/.drex-clickhouse" docker compose -f test/clickhouse/docker-compose.yml up -d --build --wait
+
+      - name: Run the tests
+        env:
+          DREX_TEST_CLICKHOUSE_PORT: '18123'
+          DREX_TEST_CLICKHOUSE_MOCK: http://127.0.0.1:18788
+        run: uv run pytest -v -rs test/test_clickhouse.py test/test_doc_snippets.py -k clickhouse
+
+      - name: ClickHouse log
+        if: failure()
+        run: DREX_CLICKHOUSE_SOURCE="$PWD/.drex-clickhouse" docker compose -f test/clickhouse/docker-compose.yml logs

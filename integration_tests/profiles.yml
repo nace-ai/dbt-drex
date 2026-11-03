@@ -1,0 +1,77 @@
+# Targets for the integration tests. The key reaches each warehouse through its own setup, never this file: DuckDB's
+# `nace` secret reads NACE_API_KEY and NACE_BASE_URL from the environment.
+drex_integration_tests:
+  target: duckdb
+  outputs:
+    duckdb:
+      type: duckdb
+      path: "{{ env_var('DREX_DUCKDB_PATH', 'drex_integration_tests.duckdb') }}"
+      threads: 4
+      settings:
+        extension_directory: "{{ env_var('DREX_DUCKDB_EXTENSIONS', env_var('HOME', '') ~ '/.duckdb/extensions') }}"
+      extensions:
+        - name: drex
+          repo: community
+      secrets:
+        - type: nace
+          provider: env
+
+    # drex-postgres's test image (docker/Dockerfile of nace-ai/drex-postgres) with drex_http.sql installed
+    postgres:
+      type: postgres
+      host: "{{ env_var('DREX_POSTGRES_HOST', '127.0.0.1') }}"
+      port: "{{ env_var('DREX_POSTGRES_PORT', '55432') | int }}"
+      user: postgres
+      password: postgres
+      dbname: postgres
+      schema: dbt_drex
+      threads: 4
+
+    # drex-clickhouse's docker-compose setup
+    clickhouse:
+      type: clickhouse
+      host: "{{ env_var('DREX_CLICKHOUSE_HOST', '127.0.0.1') }}"
+      port: "{{ env_var('DREX_CLICKHOUSE_PORT', '8123') | int }}"
+      user: default
+      password: ""
+      schema: dbt_drex
+      threads: 4
+
+    # Installs of the functions against the production API, for runs by hand
+    clickhouse_cloud:
+      type: clickhouse
+      host: "{{ env_var('CLICKHOUSE_CLOUD_HOST', '') }}"
+      port: 8443
+      secure: true
+      user: "{{ env_var('CLICKHOUSE_CLOUD_USER', 'default') }}"
+      password: "{{ env_var('CLICKHOUSE_CLOUD_PASSWORD', '') }}"
+      schema: dbt_drex
+      threads: 4
+
+    snowflake:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT', '') }}"
+      user: "{{ env_var('SNOWFLAKE_USER', '') }}"
+      private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH', '') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', '') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', '') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'drex') }}"
+      schema: dbt_drex
+      threads: 4
+
+    bigquery:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('BIGQUERY_PROJECT', '') }}"
+      dataset: dbt_drex
+      location: "{{ env_var('BIGQUERY_LOCATION', 'US') }}"
+      threads: 4
+
+    databricks:
+      type: databricks
+      host: "{{ env_var('DATABRICKS_HOST', '') }}"
+      http_path: "{{ env_var('DATABRICKS_HTTP_PATH', '') }}"
+      token: "{{ env_var('DATABRICKS_TOKEN', '') }}"
+      catalog: "{{ env_var('DATABRICKS_CATALOG', 'main') }}"
+      schema: dbt_drex
+      threads: 4

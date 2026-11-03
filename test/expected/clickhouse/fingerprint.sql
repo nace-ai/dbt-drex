@@ -1,0 +1,1 @@
+select lower(hex(MD5(toString('{"model": null, "question": {"instructions": "Which team?", "labels": ["billing", "technical"]}}' || coalesce('v' || toString(body), 'n') )))) as fingerprint from tickets

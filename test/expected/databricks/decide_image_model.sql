@@ -1,0 +1,1 @@
+select main.drex.drex_decide_image(to_json(named_struct('note', note), map('ignoreNullFields', 'false')), images, '{"kind": {"type": "choice", "criteria": ["invoice", "receipt"]}}', 'drex-max-v1.1') as answer from photos

@@ -1,0 +1,1 @@
+select md5(cast(concat('{"model": null, "question": {"instructions": "Which team?", "labels": ["billing", "technical"]}}', coalesce(concat('v', cast(body as string)), 'n')) as string)) as fingerprint from tickets

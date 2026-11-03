@@ -1,0 +1,12 @@
+name: drex_integration_tests
+version: "0.1.0"
+config-version: 2
+profile: drex_integration_tests
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+
+# Every model sends its rows once per build, so each is a table
+models:
+  drex_integration_tests:
+    +materialized: table

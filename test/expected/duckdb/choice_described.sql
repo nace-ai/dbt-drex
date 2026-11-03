@@ -1,0 +1,1 @@
+select prompt_drex(body, 'Which team should handle this ticket?', choice := [{'label': 'billing', 'description': 'Payments, invoices, refunds and charges'}, {'label': 'technical', 'description': NULL}, {'label': 'sales', 'description': NULL}], model := 'drex-max') as answer from tickets

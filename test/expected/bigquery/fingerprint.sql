@@ -1,0 +1,1 @@
+select to_hex(md5(cast('{"model": null, "question": {"instructions": "Which team?", "labels": ["billing", "technical"]}}' || coalesce('v' || TO_JSON_STRING(body), 'n') as string))) as fingerprint from tickets

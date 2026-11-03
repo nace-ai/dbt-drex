@@ -1,0 +1,1 @@
+select drex_decide_image(concat('{"note":', ifNull(toJSONString(note), 'null'), '}'), images, '{"kind": {"type": "choice", "criteria": ["invoice", "receipt"]}}', 'drex-max-v1.1') as answer from photos

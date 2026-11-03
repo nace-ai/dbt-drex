@@ -1,0 +1,10 @@
+# Each model is one call of a macro. test/test_compile.py compiles them for every adapter, without connecting, and
+# compares the SQL with test/expected/<adapter>/.
+name: drex_compile_tests
+version: "0.1.0"
+config-version: 2
+profile: drex_compile_tests
+
+models:
+  drex_compile_tests:
+    +materialized: table
