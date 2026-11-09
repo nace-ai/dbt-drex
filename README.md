@@ -19,6 +19,8 @@ types.
 Use it to route support tickets, classify documents, and score rows as part of your dbt project, with answers kept in
 tables and sent again only for rows that changed.
 
+**Also from Drex:** [Drex Browser Use](https://github.com/nace-ai/drex-browser-harness-pub), an AI browser agent and MCP server. One sentence fills a DoorDash cart in 16 moves.
+
 [Before you start](#before-you-start) · [Getting started](#getting-started) · [Examples](#examples) ·
 [Macro API](docs/API.md) · [Cost](#what-gets-sent-and-billed)
 
